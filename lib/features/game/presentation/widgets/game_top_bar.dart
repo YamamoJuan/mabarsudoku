@@ -5,6 +5,10 @@ class GameTopBar extends StatelessWidget {
   final String difficulty;
   final int errorsCount;
   final VoidCallback onBackPressed;
+  final bool canUndo;
+  final bool canRedo;
+  final VoidCallback onUndo;
+  final VoidCallback onRedo;
 
   const GameTopBar({
     Key? key,
@@ -12,6 +16,10 @@ class GameTopBar extends StatelessWidget {
     required this.difficulty,
     required this.errorsCount,
     required this.onBackPressed,
+    this.canUndo = false,
+    this.canRedo = false,
+    required this.onUndo,
+    required this.onRedo,
   }) : super(key: key);
 
   String _formatTime(Duration duration) {
@@ -56,10 +64,18 @@ class GameTopBar extends StatelessWidget {
                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 4),
               IconButton(
-                icon: const Icon(Icons.more_vert),
-                onPressed: () {},
+                icon: const Icon(Icons.undo),
+                tooltip: 'Undo',
+                onPressed: canUndo ? onUndo : null,
+                color: canUndo ? null : Colors.grey,
+              ),
+              IconButton(
+                icon: const Icon(Icons.redo),
+                tooltip: 'Redo',
+                onPressed: canRedo ? onRedo : null,
+                color: canRedo ? null : Colors.grey,
               ),
             ],
           ),

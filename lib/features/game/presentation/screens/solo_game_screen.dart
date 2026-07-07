@@ -131,6 +131,10 @@ class _SoloGameScreenState extends State<SoloGameScreen> {
               difficulty: _notifier.difficulty,
               errorsCount: _notifier.errorsCount,
               onBackPressed: () => Navigator.pop(context),
+              canUndo: _notifier.canUndo,
+              canRedo: _notifier.canRedo,
+              onUndo: _notifier.undo,
+              onRedo: _notifier.redo,
             ),
             Expanded(
               child: Center(

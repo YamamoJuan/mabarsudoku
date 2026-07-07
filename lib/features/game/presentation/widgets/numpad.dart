@@ -37,12 +37,6 @@ class Numpad extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
-                icon: const Icon(Icons.undo),
-                tooltip: 'Undo',
-                onPressed: () {},
-              ),
-              const SizedBox(width: 32),
-              IconButton(
                 icon: const Icon(Icons.auto_fix_high),
                 tooltip: 'Notes',
                 onPressed: onNote,

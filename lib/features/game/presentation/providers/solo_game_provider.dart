@@ -5,6 +5,7 @@ import '../../../core/constants/game_constants.dart';
 import '../../data/models/game_state.dart';
 import '../../domain/services/sudoku_generator.dart';
 import '../../domain/services/sudoku_validator.dart';
+import '../../domain/services/move_history.dart';
 import '../../../shared/services/game_persistence_service.dart';
 
 class SoloGameNotifier extends ChangeNotifier {
@@ -18,6 +19,8 @@ class SoloGameNotifier extends ChangeNotifier {
   Timer? _timer;
   int _elapsedSeconds = 0;
   String _difficulty = 'medium';
+  final List<MoveHistory> _undoStack = [];
+  final List<MoveHistory> _redoStack = [];
   
   late GamePersistenceService _persistenceService;
   Timer? _autoSaveTimer;
@@ -30,6 +33,8 @@ class SoloGameNotifier extends ChangeNotifier {
   int get selectedCol => _selectedCol;
   String get difficulty => _difficulty;
   Duration get elapsedTime => Duration(seconds: _elapsedSeconds);
+  bool get canUndo => _undoStack.isNotEmpty;
+  bool get canRedo => _redoStack.isNotEmpty;
 
   SoloGameNotifier() {
     _initPersistence();
@@ -47,6 +52,8 @@ class SoloGameNotifier extends ChangeNotifier {
     _elapsedSeconds = 0;
     _selectedRow = 0;
     _selectedCol = 0;
+    _undoStack.clear();
+    _redoStack.clear();
 
     final result = SudokuGenerator.generatePuzzle(difficulty);
     _solution = result.solution;
@@ -121,7 +128,16 @@ class SoloGameNotifier extends ChangeNotifier {
     if (_locked[_selectedRow][_selectedCol]) return;
 
     if (SudokuValidator.isValidMove(_grid, _selectedRow, _selectedCol, number)) {
+      final previousValue = _grid[_selectedRow][_selectedCol];
       _grid[_selectedRow][_selectedCol] = number;
+      
+      _undoStack.add(MoveHistory(
+        row: _selectedRow,
+        col: _selectedCol,
+        previousValue: previousValue,
+        newValue: number,
+      ));
+      _redoStack.clear();
       
       if (_solution[_selectedRow][_selectedCol] != number) {
         _errorsCount++;
@@ -136,6 +152,36 @@ class SoloGameNotifier extends ChangeNotifier {
     } else {
       _errorsCount++;
     }
+    notifyListeners();
+  }
+
+  void undo() {
+    if (_undoStack.isEmpty) return;
+    if (_isComplete) return;
+
+    final move = _undoStack.removeLast();
+    _grid[move.row][move.col] = move.previousValue;
+    _redoStack.add(move);
+    
+    if (_solution[move.row][move.col] != move.newValue) {
+      _errorsCount--;
+    }
+    
+    notifyListeners();
+  }
+
+  void redo() {
+    if (_redoStack.isEmpty) return;
+    if (_isComplete) return;
+
+    final move = _redoStack.removeLast();
+    _grid[move.row][move.col] = move.newValue;
+    _undoStack.add(move);
+    
+    if (_solution[move.row][move.col] != move.newValue) {
+      _errorsCount++;
+    }
+    
     notifyListeners();
   }
 
