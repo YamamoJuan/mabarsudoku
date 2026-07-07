@@ -22,14 +22,54 @@ class _HomeScreenState extends State<HomeScreen> {
               child: const Text('Play Solo'),
             ),
             const SizedBox(height: 16),
-            OutlinedButton(
-              onPressed: () {},
+            ElevatedButton(
+              onPressed: () => _showMultiplayerMenu(context),
               child: const Text('Multiplayer'),
             ),
             const SizedBox(height: 16),
             OutlinedButton(
               onPressed: () {},
               child: const Text('Profile'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showMultiplayerMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Multiplayer',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.go('/create-room');
+                },
+                child: const Text('Create Room'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.go('/join-room');
+                },
+                child: const Text('Join Room'),
+              ),
             ),
           ],
         ),
