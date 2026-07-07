@@ -1,0 +1,12 @@
+flutter:
+  version:
+    number: 0.1.0
+    buildNumber: 1
+
+android:
+  compileSdkVersion: 34
+  minSdkVersion: 21
+  targetSdkVersion: 34
+
+ios:
+  deploymentTarget: "12.0"
