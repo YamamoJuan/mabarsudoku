@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/game_constants.dart';
+import '../../data/models/game_state.dart';
 import '../../domain/services/sudoku_generator.dart';
 import '../../domain/services/sudoku_validator.dart';
+import '../../../shared/services/game_persistence_service.dart';
 
 class SoloGameNotifier extends ChangeNotifier {
   List<List<int>> _grid = [];
@@ -15,6 +18,9 @@ class SoloGameNotifier extends ChangeNotifier {
   Timer? _timer;
   int _elapsedSeconds = 0;
   String _difficulty = 'medium';
+  
+  late GamePersistenceService _persistenceService;
+  Timer? _autoSaveTimer;
 
   List<List<int>> get grid => _grid;
   List<List<bool>> get locked => _locked;
@@ -24,6 +30,15 @@ class SoloGameNotifier extends ChangeNotifier {
   int get selectedCol => _selectedCol;
   String get difficulty => _difficulty;
   Duration get elapsedTime => Duration(seconds: _elapsedSeconds);
+
+  SoloGameNotifier() {
+    _initPersistence();
+  }
+
+  void _initPersistence() async {
+    final prefs = await SharedPreferences.getInstance();
+    _persistenceService = GamePersistenceService(prefs);
+  }
 
   void startNewGame({String difficulty = 'medium'}) {
     _difficulty = difficulty;
@@ -41,9 +56,30 @@ class SoloGameNotifier extends ChangeNotifier {
     );
 
     _startTimer();
+    _startAutoSave();
     notifyListeners();
   }
 
+  Future<void> loadSavedGame() async {
+    final savedState = await _persistenceService.loadCurrentGame();
+    if (savedState == null) return;
+
+    _grid = savedState.grid.map((row) => [...row]).toList();
+    _solution = savedState.solution.map((row) => [...row]).toList();
+    _locked = savedState.locked.map((row) => [...row]).toList();
+    _errorsCount = savedState.errorsCount;
+    _isComplete = savedState.isComplete;
+    _elapsedSeconds = savedState.elapsedSeconds;
+    _difficulty = savedState.difficulty;
+
+    _startTimer();
+    _startAutoSave();
+    notifyListeners();
+  }
+
+  Future<bool> hasSavedGame() async {
+    return await _persistenceService.hasCurrentGame();
+  }
 
   void _startTimer() {
     _timer?.cancel();
@@ -51,6 +87,27 @@ class SoloGameNotifier extends ChangeNotifier {
       _elapsedSeconds++;
       notifyListeners();
     });
+  }
+
+  void _startAutoSave() {
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _saveCurrentGame();
+    });
+  }
+
+  Future<void> _saveCurrentGame() async {
+    final gameState = GameState(
+      grid: _grid,
+      solution: _solution,
+      locked: _locked,
+      isComplete: _isComplete,
+      errorsCount: _errorsCount,
+      elapsedSeconds: _elapsedSeconds,
+      difficulty: _difficulty,
+      createdAt: DateTime.now(),
+    );
+    await _persistenceService.saveCurrentGame(gameState);
   }
 
   void selectCell(int row, int col) {
@@ -73,6 +130,8 @@ class SoloGameNotifier extends ChangeNotifier {
       if (SudokuValidator.isBoardComplete(_grid)) {
         _isComplete = true;
         _timer?.cancel();
+        _autoSaveTimer?.cancel();
+        _saveCurrentGame();
       }
     } else {
       _errorsCount++;
@@ -92,6 +151,8 @@ class SoloGameNotifier extends ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
+    _autoSaveTimer?.cancel();
+    _saveCurrentGame();
     super.dispose();
   }
 }
